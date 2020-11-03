@@ -23,9 +23,9 @@
     ]
   },
   "include": [
-    "assets/**/*.ts",
-    "assets/**/*.tsx",
-    "assets/**/*.vue",
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/**/*.vue",
     "tests/**/*.ts",
     "tests/**/*.tsx"
   ],

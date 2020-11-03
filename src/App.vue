@@ -1,16 +1,21 @@
 <template>
   <div id="app">
-    <home/>
+    <p>
+      <router-link to="/">
+        首页
+      </router-link>
+      <router-link to="/about">
+        关于
+      </router-link>
+    </p>
+    <router-view></router-view>
   </div>
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
-import Home from './components/Home.vue';
-@Component({
-  components: {
-    Home,
-  },
-})
-export default class App extends Vue {}
+import {Component, Vue} from 'vue-property-decorator'
+
+@Component()
+export default class App extends Vue {
+}
 </script>

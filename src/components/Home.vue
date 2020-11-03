@@ -19,7 +19,7 @@
 </template>
 <script lang="ts">
 import {Component, Vue} from 'vue-property-decorator'
-import webSocket from '../ts/websocket'
+import webSocket from '../utils/websocket'
 
 interface IMesage {
   source: string
