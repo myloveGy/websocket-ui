@@ -41,19 +41,20 @@ export default class Home extends Vue {
   disabled: boolean = true
 
   created() {
-    this.socket = new webSocket("ws://localhost:8080/ws", {
-      sid: '123456',
-      access_token: "12121212",
-      url: "/"
-    }, {
-      messageResponse: (content: string) => this.data.push({
-        source: 'system',
-        content,
-      }),
-      authResponse: () => {
-        this.disabled = false
-      }
-    })
+    this.socket = new webSocket(
+        'ws://localhost:3000/ws/2020110306161001',
+        {
+          session_id: '123456',
+        },
+        {
+          messageResponse: (content: string) => this.data.push({
+            source: 'system',
+            content,
+          }),
+          authResponse: () => {
+            this.disabled = false
+          },
+        })
   }
 
   submit() {
@@ -63,7 +64,7 @@ export default class Home extends Vue {
     }
 
     const data: IMesage = {
-      source: "me",
+      source: 'me',
       content: this.message,
     }
 
@@ -100,6 +101,7 @@ export default class Home extends Vue {
   height: 35px;
   width: 100%;
   line-height: 35px;
+
   form {
     width: 100%;
     display: flex;
