@@ -42,9 +42,9 @@ export default class Home extends Vue {
 
   private created() {
     this.socket = new webSocket(
-        'ws://localhost:3000/ws/2020110306161001?user_id=123',
+        'ws://localhost:3000/ws/2020110306161001?user_id=u-' + Math.ceil(Math.random() * 100).toString(),
         {
-          user_id: '123456',
+          user_id: 'my-' + Math.ceil(Math.random() * 100).toString(),
           sign: '456',
         },
         {
