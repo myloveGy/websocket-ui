@@ -29,22 +29,23 @@ interface IMesage {
 @Component
 export default class Home extends Vue {
 
-  socket: any
+  private socket: any
 
   // 消息列表
-  data: Array<IMesage> = []
+  private data: IMesage[] = []
 
   // 输入消息
-  message: string = ''
+  private message: string = ''
 
   // 是否可以点击
-  disabled: boolean = true
+  private disabled: boolean = true
 
-  created() {
+  private created() {
     this.socket = new webSocket(
-        'ws://localhost:3000/ws/2020110306161001',
+        'ws://localhost:3000/ws/2020110306161001?user_id=123',
         {
-          session_id: '123456',
+          user_id: '123456',
+          sign: '456',
         },
         {
           messageResponse: (content: string) => this.data.push({
@@ -57,7 +58,7 @@ export default class Home extends Vue {
         })
   }
 
-  submit() {
+  private submit() {
     if (!this.message) {
       console.info('请输入消息内容')
       return
