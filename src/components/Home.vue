@@ -41,21 +41,28 @@ export default class Home extends Vue {
   private disabled: boolean = true
 
   private created() {
-    this.socket = new webSocket(
-        'ws://localhost:3000/ws/2020110306161001?user_id=u-' + Math.ceil(Math.random() * 100).toString(),
+
+    this.socket = new webSocket('ws://localhost:3000',
         {
-          user_id: 'my-' + Math.ceil(Math.random() * 100).toString(),
-          sign: '456',
-        },
-        {
-          messageResponse: (content: string) => this.data.push({
-            source: 'system',
-            content,
-          }),
-          authResponse: () => {
-            this.disabled = false
+          path: '/ws/2020110306161001',
+          query: {
+            user_id: 'user-' + Math.ceil(Math.random() * 100).toString(),
+            sign: '456',
           },
-        })
+          handler: {
+            message: (content: string) => this.data.push({
+              source: 'system',
+              content,
+            }),
+          },
+        }).on('connection', () => {
+      console.info('connection')
+      this.disabled = false
+    }).on('close', () => {
+      console.info('close')
+    }).on('heartbeat', () => {
+      console.info('heartbeat')
+    })
   }
 
   private submit() {
