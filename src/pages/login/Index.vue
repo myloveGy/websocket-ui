@@ -21,21 +21,14 @@ import {Component, Vue} from 'vue-property-decorator'
 @Component
 export default class Index extends Vue {
 
-  private bodyHtml: HTMLBodyElement | null = null
-
   private form: { username: string, password: string } = {username: '', password: ''}
 
   private beforeCreate() {
-    this.bodyHtml = document.querySelector('body')
-    if (this.bodyHtml) {
-      this.bodyHtml.setAttribute('class', 'main-body')
-    }
+    document.querySelector('body')?.setAttribute('class', 'main-body')
   }
 
   private destroyed() {
-    if (this.bodyHtml) {
-      this.bodyHtml.setAttribute('class', '')
-    }
+    document.querySelector('body')?.setAttribute('class', '')
   }
 
   private submit() {
@@ -59,6 +52,7 @@ export default class Index extends Vue {
   height: 300px;
   border-radius: 10px;
   text-align: center;
+  opacity: 0.8;
 
   h1 {
     color: white;
