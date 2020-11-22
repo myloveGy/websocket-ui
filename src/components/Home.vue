@@ -30,7 +30,7 @@ interface IMesage {
 @Component
 export default class Home extends Vue {
 
-  private socket: webSocket
+  private readonly socket: webSocket
 
   // 消息列表
   private data: IMesage[] = []
@@ -41,24 +41,27 @@ export default class Home extends Vue {
   // 是否可以点击
   private disabled: boolean = true
 
+  constructor() {
+    super()
+    this.socket = new webSocket({
+      url: 'ws://localhost:3000/ws/2020110306161001',
+      query: {
+        user_id: 'user-' + Math.ceil(Math.random() * 100).toString(),
+        sign: '456',
+      },
+    })
+  }
+
   private created() {
 
-    this.socket = new webSocket('',
-        {
-          url: 'ws://localhost:3000/ws/2020110306161001',
-          query: {
-            user_id: 'user-' + Math.ceil(Math.random() * 100).toString(),
-            sign: '456',
-          },
-        })
 
     console.info(this.socket, '123')
 
 
     this.socket.on('connection', () => this.disabled = false)
-        .on('close', (...args) => console.info('close', args))
+        .on('close', (...args: any) => console.info('close', args))
         .on('heartbeat', () => console.info('heartbeat'))
-        .on('open', (...args) => console.info(args, 'open'))
+        .on('open', (...args: any) => console.info(args, 'open'))
         .on('message', (content: string) => this.data.push({source: 'system', content}))
   }
 

@@ -7,6 +7,9 @@
       <router-link to="/about">
         关于
       </router-link>
+      <router-link to="/login">
+        登录
+      </router-link>
     </p>
     <router-view></router-view>
   </div>

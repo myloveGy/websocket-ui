@@ -53,10 +53,18 @@ export default class Socket {
 
   /**
    * 初始化函数
-   * @param url
+   * @param param
    * @param options
    */
-  constructor(url: string, options: Options = {}) {
+  constructor(param: string | Options, options: Options = {}) {
+    let url: string = ''
+    if (param as Options) {
+      options = param as Options
+      url = ''
+    } else if (typeof param === 'string') {
+      url = param as string
+    }
+
     // ws地址
     url = url || options.url || ''
     options.path = options.path || ''
@@ -73,7 +81,7 @@ export default class Socket {
     if (!options.heartbeatData) {
       this.heartbeatData = () => ''
     } else if (typeof options.heartbeatData === 'function') {
-      this.heartbeatData = <fnProps>options.heartbeatData
+      this.heartbeatData = options.heartbeatData as fnProps
     } else {
       this.heartbeatData = () => options.heartbeatData
     }
