@@ -13,6 +13,7 @@
       <form @submit.prevent.stop="submit">
         <input type="text" v-model="message"/>
         <button type="submit" :disabled="disabled">发送</button>
+        <button type="button" class="close" @click="close" :disabled="disabled">关闭</button>
       </form>
     </div>
   </div>
@@ -29,7 +30,7 @@ interface IMesage {
 @Component
 export default class Home extends Vue {
 
-  private socket: any
+  private socket: webSocket
 
   // 消息列表
   private data: IMesage[] = []
@@ -42,27 +43,23 @@ export default class Home extends Vue {
 
   private created() {
 
-    this.socket = new webSocket('ws://localhost:3000',
+    this.socket = new webSocket('',
         {
-          path: '/ws/2020110306161001',
+          url: 'ws://localhost:3000/ws/2020110306161001',
           query: {
             user_id: 'user-' + Math.ceil(Math.random() * 100).toString(),
             sign: '456',
           },
-          handler: {
-            message: (content: string) => this.data.push({
-              source: 'system',
-              content,
-            }),
-          },
-        }).on('connection', () => {
-      console.info('connection')
-      this.disabled = false
-    }).on('close', () => {
-      console.info('close')
-    }).on('heartbeat', () => {
-      console.info('heartbeat')
-    })
+        })
+
+    console.info(this.socket, '123')
+
+
+    this.socket.on('connection', () => this.disabled = false)
+        .on('close', (...args) => console.info('close', args))
+        .on('heartbeat', () => console.info('heartbeat'))
+        .on('open', (...args) => console.info(args, 'open'))
+        .on('message', (content: string) => this.data.push({source: 'system', content}))
   }
 
   private submit() {
@@ -79,6 +76,10 @@ export default class Home extends Vue {
     this.message = ''
     this.socket.send(data)
     this.data.push(data)
+  }
+
+  private close() {
+    this.socket.close('我手动关闭的')
   }
 }
 </script>
@@ -139,6 +140,17 @@ export default class Home extends Vue {
       box-sizing: border-box;
       color: #fff;
       background-color: #13c2c2;
+
+      &.close {
+        background-color: #ff4d4f;
+        border-color: #ff4d4f;
+      }
+
+      &[disabled] {
+        color: rgba(0, 0, 0, .25);
+        background-color: #f5f5f5;
+        border-color: #d9d9d9;
+      }
     }
   }
 }

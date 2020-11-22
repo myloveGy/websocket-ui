@@ -1,9 +1,16 @@
 import {Format} from './time'
 
+type fnProps = () => any
+
+type heartbeatDataProps = string | { [prop: string]: any } | fnProps
+
 interface Options {
+  url?: string,
   handler?: object | null,
   path?: string,
-  query?: object,
+  query?: { [prop: string]: any },
+  heartbeatDelayTime?: number,
+  heartbeatData?: heartbeatDataProps
 }
 
 export default class Socket {
@@ -18,13 +25,13 @@ export default class Socket {
   public typeReplyMessage: string = 'reply_message' // 发送消息回复
 
   // socket 连接
-  private webSocket: WebSocket
+  private readonly webSocket: WebSocket
 
   // 心跳检测
   private heartbeatInterval: any = null
 
   // 处理函数
-  private handler: any
+  private readonly handler: any
 
   /**
    * 配置信息
@@ -33,36 +40,63 @@ export default class Socket {
   private readonly options: Options
 
   /**
+   * 心跳时间
+   * @private
+   */
+  private readonly heartbeatDelayTime: number
+
+  /**
+   * 心跳数据
+   * @private
+   */
+  private readonly heartbeatData: fnProps
+
+  /**
    * 初始化函数
    * @param url
    * @param options
    */
-  constructor(url: string, options: Options) {
+  constructor(url: string, options: Options = {}) {
     // ws地址
+    url = url || options.url || ''
+    options.path = options.path || ''
     this.options = options
-    console.info('WebSocket Info: connection: ' + url)
-    this.webSocket = new WebSocket(this.parseUrl(url))
-    this.webSocket.onmessage = this.message.bind(this)
-    this.webSocket.onclose = this.close.bind(this)
-    this.webSocket.onopen = this.open.bind(this)
-    this.handler = options.handler
+    const connectionUrl = this.parseUrl(url)
+    console.info('WebSocket Info: connection: ' + connectionUrl)
+    this.webSocket = new WebSocket(connectionUrl)
+    this.webSocket.onmessage = this.handlerMessage.bind(this)
+    this.webSocket.onclose = this.handlerClose.bind(this)
+    this.webSocket.onopen = this.handlerOpen.bind(this)
+    this.webSocket.onerror = this.handlerError.bind(this)
+    this.handler = options.handler || {}
+    this.heartbeatDelayTime = this.options.heartbeatDelayTime || 3e4
+    if (!options.heartbeatData) {
+      this.heartbeatData = () => ''
+    } else if (typeof options.heartbeatData === 'function') {
+      this.heartbeatData = <fnProps>options.heartbeatData
+    } else {
+      this.heartbeatData = () => options.heartbeatData
+    }
   }
 
   // 数据发送
   public send = (data: any, type: string = '') => {
+    // websocket 已经链接
+    if (this.webSocket && this.webSocket.readyState === 1) {
+      const content = typeof data === 'object' ? JSON.stringify(data) : data
+      const request: any = {
+        type: type || this.typeMessage,
+      }
 
-    const content = typeof data === 'object' ? JSON.stringify(data) : data
+      if (content) {
+        request.content = content
+      }
 
-    let request: any = {
-      type: type || this.typeMessage,
-      time: Format(new Date(), 'yyyy-MM-dd hh:mm:ss'),
+      request.time = Format(new Date(), 'yyyy-MM-dd hh:mm:ss')
+      this.webSocket.send(JSON.stringify(request))
+    } else {
+      console.error('websocket is close', this.webSocket)
     }
-
-    if (content) {
-      request.content = content
-    }
-
-    this.webSocket.send(JSON.stringify(request))
   }
 
   /**
@@ -75,24 +109,34 @@ export default class Socket {
     return this
   }
 
+  public close = (content: string = '') => this.send(content, this.typeClose)
+
   // 开启事件
-  private open = (...args: any) => {
+  private handlerOpen = (...args: any) => {
     if (this.handler.hasOwnProperty('open')) {
       this.handler.open.call(this, ...args)
+    }
+  }
+
+  private handlerError = (...args: any) => {
+    if (this.handler.hasOwnProperty('error')) {
+      this.handler.error.call(this, ...args)
     }
   }
 
   private parseUrl = (url: string) => {
     const query = []
     for (const key in this.options.query) {
-      query.push(`${key}=${this.options.query[key]}`)
+      if (this.options.query.hasOwnProperty(key)) {
+        query.push(`${key}=${this.options.query[key]}`)
+      }
     }
 
     return `${url}${this.options.path}?${query.join('&')}`
   }
 
   // 数据接收
-  private message = (e: MessageEvent) => {
+  private handlerMessage = (e: MessageEvent) => {
 
     if (!e.data) {
       console.info('出错了')
@@ -106,28 +150,33 @@ export default class Socket {
     if (receiver.type === this.typeConnection) {
       this.heartbeatInterval = setInterval(() => {
         this.heartbeat()
-      }, 3e4)
+      }, this.heartbeatDelayTime)
     }
 
     this.callHandler(receiver)
   }
 
   // 关闭
-  private close = (e: CloseEvent) => {
+  private handlerClose = (e: CloseEvent, ...args: any) => {
     if (this.heartbeatInterval) {
       clearInterval(this.heartbeatInterval)
+    }
+
+    // 自定义关闭
+    if (this.handler.hasOwnProperty('close')) {
+      this.handler.close.call(this, e, ...args)
     }
 
     console.log('WebSocket Error: connection closed (' + e.code + ')')
   }
 
   // 心跳
-  private heartbeat = () => this.send('', this.typeHeartbeat)
+  private heartbeat = () => this.send(this.heartbeatData(), this.typeHeartbeat)
 
   // 调用处理函数
   private callHandler = (receiver: any) => {
     if (this.handler.hasOwnProperty(receiver.type)) {
-      this.handler[receiver.type].call(this, receiver.data, receiver)
+      this.handler[receiver.type].call(this, receiver.content, receiver)
     } else {
       console.error(`WebSocket Error: 消息类型[${receiver.type}]未处理，消息内容:`, receiver.data)
     }
