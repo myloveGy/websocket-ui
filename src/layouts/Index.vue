@@ -2,18 +2,14 @@
   <a-layout id="components-layout-demo-custom-trigger">
     <a-layout-sider v-model="collapsed" :trigger="null" collapsible>
       <div class="logo"/>
-      <a-menu theme="dark" mode="inline" :default-selected-keys="['1']">
-        <a-menu-item key="1">
+      <a-menu theme="dark" mode="inline" :default-selected-keys="['/admin/user']" @click="onClick">
+        <a-menu-item key="/admin/user">
           <a-icon type="user"/>
-          <span>nav 1</span>
+          <span>用户列表</span>
         </a-menu-item>
-        <a-menu-item key="2">
+        <a-menu-item key="/admin/app">
           <a-icon type="video-camera"/>
-          <span>nav 2</span>
-        </a-menu-item>
-        <a-menu-item key="3">
-          <a-icon type="upload"/>
-          <span>nav 3</span>
+          <span>应用列表</span>
         </a-menu-item>
       </a-menu>
     </a-layout-sider>
@@ -26,7 +22,7 @@
         />
       </a-layout-header>
       <a-layout-content
-          :style="{ margin: '24px 16px', padding: '24px', background: '#fff', minHeight: '280px' }"
+          :style="{ margin: '24px 16px', padding: '24px', background: '#fff', minHeight: '280px', overflow: 'hidden' }"
       >
         <slot>Content</slot>
       </a-layout-content>
@@ -40,6 +36,11 @@ export default {
     return {
       collapsed: false,
     }
+  },
+  methods: {
+    onClick({key}) {
+      this.$router.push(key)
+    },
   },
 }
 </script>

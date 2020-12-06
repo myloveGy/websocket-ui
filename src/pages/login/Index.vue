@@ -36,7 +36,7 @@ export default class Index extends Vue {
 
   private submit() {
     if (!this.form.username || !this.form.password) {
-      alert('请输入账号和密码进行登录')
+      this.$message.warn('请输入账号和密码进行登录')
       return
     }
 
@@ -45,7 +45,7 @@ export default class Index extends Vue {
       userStore.save(data, 60 * 60 * 2)
       this.$toast.success('登录成功')
       await this.$router.push('/home')
-    }, false)
+    })
   }
 }
 </script>
