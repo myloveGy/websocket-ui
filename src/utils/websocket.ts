@@ -4,7 +4,7 @@ type fnProps = () => any
 
 type heartbeatDataProps = string | { [prop: string]: any } | fnProps
 
-interface Options {
+export interface Options {
   url?: string,
   handler?: object | null,
   path?: string,
@@ -13,7 +13,13 @@ interface Options {
   heartbeatData?: heartbeatDataProps
 }
 
-export default class Socket {
+export interface ReplyMessageResponse {
+  id: number,
+  status: 'success' | 'error'
+  message: string
+}
+
+export class Socket {
 
   /**
    * 消息类型
@@ -108,6 +114,12 @@ export default class Socket {
   }
 
   /**
+   * 回复消息
+   * @param id
+   */
+  public replyMessage = (id: number) => this.send({id}, this.typeReplyMessage)
+
+  /**
    * 监听对象
    * @param type
    * @param fn
@@ -155,7 +167,7 @@ export default class Socket {
     const receiver = JSON.parse(e.data)
 
     // 链接成功，需要上报心跳了
-    if (receiver.type === this.typeConnection) {
+    if (receiver.type === this.typeConnection && !this.heartbeatInterval) {
       this.heartbeatInterval = setInterval(() => {
         this.heartbeat()
       }, this.heartbeatDelayTime)
@@ -184,8 +196,12 @@ export default class Socket {
   // 调用处理函数
   private callHandler = (receiver: any) => {
     if (this.handler.hasOwnProperty(receiver.type)) {
+      if ([this.typeReplyMessage].includes(receiver.type)) {
+        receiver.content = JSON.parse(receiver.content)
+      }
+
       this.handler[receiver.type].call(this, receiver.content, receiver)
-    } else {
+    } else if (![this.typeHeartbeat, this.typeReplyMessage].includes(receiver.type)) {
       console.error(`WebSocket Error: 消息类型[${receiver.type}]未处理，消息内容:`, receiver.data)
     }
   }

@@ -17,6 +17,9 @@
 
 <script lang="ts">
 import {Component, Vue} from 'vue-property-decorator'
+import {loginApi} from '../../services'
+import {sync} from '../../utils/sync'
+import {userStore} from '../../utils/user'
 
 @Component
 export default class Index extends Vue {
@@ -37,7 +40,12 @@ export default class Index extends Vue {
       return
     }
 
-    alert(this.form)
+    sync(async () => {
+      const data = await loginApi(this.form)
+      userStore.save(data, 60 * 60 * 2)
+      this.$toast.success('登录成功')
+      await this.$router.push('/home')
+    }, false)
   }
 }
 </script>

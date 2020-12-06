@@ -7,6 +7,7 @@
           :key="key"
       >
         <span>{{ item.content }}</span>
+        <span v-if="item.id && !read.includes(item.id)" @click="reply(item.id)" class="reply">标记已读</span>
       </div>
     </div>
     <div class="form">
@@ -20,9 +21,12 @@
 </template>
 <script lang="ts">
 import {Component, Vue} from 'vue-property-decorator'
-import webSocket from '../utils/websocket'
+import {Socket, ReplyMessageResponse} from '../utils/websocket'
+import {sync} from '../utils/sync'
+import {userWsApi} from '../services'
 
 interface IMesage {
+  id?: number,
   source: string
   content: string
 }
@@ -30,10 +34,12 @@ interface IMesage {
 @Component
 export default class Home extends Vue {
 
-  private readonly socket: webSocket
+  private socket: Socket | undefined = undefined
 
   // 消息列表
   private data: IMesage[] = []
+
+  private read: number[] = []
 
   // 输入消息
   private message: string = ''
@@ -41,28 +47,49 @@ export default class Home extends Vue {
   // 是否可以点击
   private disabled: boolean = true
 
-  constructor() {
-    super()
-    this.socket = new webSocket({
-      url: 'ws://localhost:3000/ws/2020110306161001',
-      query: {
-        user_id: 'user-' + Math.ceil(Math.random() * 100).toString(),
-        sign: '456',
-      },
+  private created() {
+    sync(async () => {
+      const data = await userWsApi()
+      this.socket = new Socket({
+        url: 'ws://localhost:3000/ws/2020110306161001',
+        query: data,
+      }).on('connection', () => this.disabled = false)
+          .on('close', () => this.disabled = true)
+          .on('message', (content: string, contentData: any) => {
+            const message: IMesage = {
+              source: 'system',
+              content,
+            }
+
+            if (contentData && contentData.hasOwnProperty('id')) {
+              message.id = contentData.id
+            }
+
+            this.data.push(message)
+          }).on('reply_message', (content: ReplyMessageResponse) => {
+            if (content.status === 'success') {
+              this.read.push(content.id)
+            } else {
+              this.$toast.error('消息回复失败:' + content.message)
+            }
+          })
     })
   }
 
-  private created() {
+  private reply(id: number) {
+    if (!id) {
+      this.$toast.error('消息ID不存在')
+      return
+    }
 
+    if (!this.socket) {
+      this.$toast.error('socket连接不存在')
+      return
+    }
 
-    console.info(this.socket, '123')
-
-
-    this.socket.on('connection', () => this.disabled = false)
-        .on('close', (...args: any) => console.info('close', args))
-        .on('heartbeat', () => console.info('heartbeat'))
-        .on('open', (...args: any) => console.info(args, 'open'))
-        .on('message', (content: string) => this.data.push({source: 'system', content}))
+    if (this.socket) {
+      this.socket.replyMessage(id)
+    }
   }
 
   private submit() {
@@ -77,12 +104,16 @@ export default class Home extends Vue {
     }
 
     this.message = ''
-    this.socket.send(data)
+    if (this.socket) {
+      this.socket.send(data)
+    }
     this.data.push(data)
   }
 
   private close() {
-    this.socket.close('我手动关闭的')
+    if (this.socket) {
+      this.socket.close('我手动关闭的')
+    }
   }
 }
 </script>
@@ -106,6 +137,15 @@ export default class Home extends Vue {
 
 .message {
   padding: 5px;
+
+  span.reply {
+    padding: 0 5px;
+    border: 1px solid #13c2c2;
+    border-radius: 4px;
+    box-sizing: border-box;
+    color: #fff;
+    background-color: #13c2c2;
+  }
 }
 
 .form {

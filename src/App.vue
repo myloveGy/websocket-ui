@@ -1,21 +1,21 @@
 <template>
   <div id="app">
-    <p>
-      <router-link to="/home">
-        首页
-      </router-link>
-      <router-link to="/login">
-        登录
-      </router-link>
-    </p>
-    <router-view></router-view>
+    <router-view v-if="['/login', '/home'].includes($route.path)"></router-view>
+    <Index v-else>
+      <router-view></router-view>
+    </Index>
   </div>
 </template>
 
 <script lang="ts">
 import {Component, Vue} from 'vue-property-decorator'
+import Index from './layouts/Index.vue'
 
-@Component
+@Component({
+  components: {
+    Index,
+  },
+})
 export default class App extends Vue {
 }
 </script>
