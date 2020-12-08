@@ -2,7 +2,7 @@
   <div>
     <a-form layout="inline" :form="form" @submit="handleSubmit" style="margin-bottom: 16px">
       <CInput name="user_id" placeholder="请输入用户ID"/>
-      <CInput name="username" placeholder="请输入用户名称"/>
+      <CInput name="username" placeholder="请输入用户名称" :rules="[{ required: true, message: 'Please input your note!' }]"/>
       <CSelect
           name="status"
           placeholder="请选择状态"
@@ -44,6 +44,7 @@
         <a v-else @click="onClick({action: 'offline', data: user})">停用</a>
       </template>
     </a-table>
+    <CModal ref="form"/>
   </div>
 </template>
 
@@ -52,6 +53,7 @@ import {adminUserListApi, adminUserOfflineApi, adminUserOnlineApi} from '@/servi
 import {sync} from '@/utils/sync'
 import CSelect from '@/components/form/CSelect.vue'
 import CInput from '@/components/form/CInput.vue'
+import CModal from '@/components/CModal.vue'
 
 const columns = [
   {
@@ -89,7 +91,7 @@ const columns = [
 ]
 
 export default {
-  components: {CSelect, CInput},
+  components: {CSelect, CInput, CModal},
   data() {
     return {
       data: [],
@@ -151,15 +153,19 @@ export default {
             this.fetch()
           })
           break
+        case 'update':
+          this.$refs.form.open({title: '修改用户信息', action: 'update', values: {...data}})
+          break
       }
     },
     fetch(params = {}) {
       console.log('params:', params)
       this.loading = true
       adminUserListApi(params).then(({items, pagination}) => {
-        this.loading = false
         this.data = items
         this.pagination = {...this.pagination, ...pagination}
+      }).finally(() => this.loading = false).catch(e => {
+        console.info(123)
       })
     },
   },
