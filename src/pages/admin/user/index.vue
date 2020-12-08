@@ -2,7 +2,7 @@
   <div>
     <a-form layout="inline" :form="form" @submit="handleSubmit" style="margin-bottom: 16px">
       <CInput name="user_id" placeholder="请输入用户ID"/>
-      <CInput name="username" placeholder="请输入用户名称" :rules="[{ required: true, message: 'Please input your note!' }]"/>
+      <CInput name="username" placeholder="请输入用户名称"/>
       <CSelect
           name="status"
           placeholder="请选择状态"
@@ -44,12 +44,12 @@
         <a v-else @click="onClick({action: 'offline', data: user})">停用</a>
       </template>
     </a-table>
-    <CModal ref="form"/>
+    <CModal ref="form" :submit="submitForm"/>
   </div>
 </template>
 
 <script>
-import {adminUserListApi, adminUserOfflineApi, adminUserOnlineApi} from '@/services'
+import {adminUserListApi, adminUserOfflineApi, adminUserOnlineApi, adminUserUpdateApi} from '@/services'
 import {sync} from '@/utils/sync'
 import CSelect from '@/components/form/CSelect.vue'
 import CInput from '@/components/form/CInput.vue'
@@ -125,6 +125,13 @@ export default {
         if (!err) {
           this.fetch(values)
         }
+      })
+    },
+    async submitForm(values) {
+      await adminUserUpdateApi(values)
+      this.$notification.success({
+        message: '温馨提示',
+        description: '编辑成功',
       })
     },
     handleReset() {

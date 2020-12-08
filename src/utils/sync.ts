@@ -6,6 +6,7 @@ export const sync = (fn: any, loading: boolean | string = true) => {
   }
 
   return fn().catch((error: any) => {
+    console.info(error, 'error')
     notification.error({
       message: '错误提示',
       description: error.message,
