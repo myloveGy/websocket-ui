@@ -95,3 +95,11 @@ export default {
   },
 }
 </script>
+
+<style lang="less">
+.ant-modal-body {
+  .ant-form-item:last-child {
+    margin-bottom: 0 !important;
+  }
+}
+</style>
