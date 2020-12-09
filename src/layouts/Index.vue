@@ -2,7 +2,7 @@
   <a-layout id="components-layout-demo-custom-trigger">
     <a-layout-sider v-model="collapsed" :trigger="null" collapsible>
       <div class="logo"/>
-      <a-menu theme="dark" mode="inline" :default-selected-keys="['/admin/user']" @click="onClick">
+      <a-menu theme="dark" mode="inline" :default-selected-keys="[$route.path]" @click="onClick">
         <a-menu-item key="/admin/user">
           <a-icon type="user"/>
           <span>用户列表</span>

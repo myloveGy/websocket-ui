@@ -24,6 +24,11 @@ const routes: RouteConfig[] = [
     name: 'admin-user',
     component: () => import('../pages/admin/user/index.vue'),
   },
+  {
+    path: '/admin/app',
+    name: 'admin-app',
+    component: () => import('../pages/admin/app/index.vue'),
+  },
 ]
 
 
