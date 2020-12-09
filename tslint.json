@@ -34,6 +34,7 @@
       false,
       "always"
     ],
-    "no-console": false
+    "no-console": false,
+    "no-spaced-func": false
   }
 }

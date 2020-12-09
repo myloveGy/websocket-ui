@@ -1,6 +1,9 @@
 <template>
   <div>
-    <a-form layout="inline" :form="form" @submit="handleSubmit" style="margin-bottom: 16px">
+    <a-button type="primary" @click="onCreate">
+      添加用户
+    </a-button>
+    <a-form layout="inline" :form="form" @submit="handleSubmit" style="margin-bottom: 16px; float: right">
       <CInput name="user_id" placeholder="请输入用户ID"/>
       <CInput name="username" placeholder="请输入用户名称"/>
       <CSelect
@@ -44,16 +47,25 @@
         <a v-else @click="onClick({action: 'offline', data: user})">停用</a>
       </template>
     </a-table>
-    <CModal ref="form" :submit="submitForm"/>
+    <CModal ref="form" :submit="submitForm">
+      <Form/>
+    </CModal>
   </div>
 </template>
 
 <script>
-import {adminUserListApi, adminUserOfflineApi, adminUserOnlineApi, adminUserUpdateApi} from '@/services'
+import {
+  adminUserListApi,
+  adminUserOfflineApi,
+  adminUserOnlineApi,
+  adminUserUpdateApi,
+  adminUserCreateApi,
+} from '@/services'
 import {sync} from '@/utils/sync'
 import CSelect from '@/components/form/CSelect.vue'
 import CInput from '@/components/form/CInput.vue'
 import CModal from '@/components/CModal.vue'
+import Form from './inner/Form.vue'
 
 const columns = [
   {
@@ -91,7 +103,7 @@ const columns = [
 ]
 
 export default {
-  components: {CSelect, CInput, CModal},
+  components: {CSelect, CInput, CModal, Form},
   data() {
     return {
       data: [],
@@ -127,16 +139,29 @@ export default {
         }
       })
     },
-    async submitForm(values) {
-      await adminUserUpdateApi(values)
-      this.$notification.success({
-        message: '温馨提示',
-        description: '编辑成功',
-      })
+    async submitForm(values, modal) {
+      if (modal.action === 'create') {
+        await adminUserCreateApi(values)
+        this.$notification.success({
+          message: '温馨提示',
+          description: '添加成功',
+        })
+      } else {
+        await adminUserUpdateApi(values)
+        this.$notification.success({
+          message: '温馨提示',
+          description: '编辑成功',
+        })
+      }
+
+      this.fetch()
     },
     handleReset() {
       this.form.resetFields()
       this.fetch()
+    },
+    onCreate() {
+      this.$refs.form.open('create', '添加用户信息', {values: {}})
     },
     onClick({action, data}) {
       switch (action) {
@@ -161,7 +186,7 @@ export default {
           })
           break
         case 'update':
-          this.$refs.form.open({title: '修改用户信息', action: 'update', values: {...data}})
+          this.$refs.form.open('update', '修改用户信息', {values: {...data, password: ''}})
           break
       }
     },
