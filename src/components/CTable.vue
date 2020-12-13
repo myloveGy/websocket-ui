@@ -1,6 +1,7 @@
 <template>
   <div>
     <div style="height: auto; overflow: hidden">
+      <slot name="button"/>
       <a-form layout="inline" :form="form" @submit="handleSubmit" style="margin-bottom: 16px; float: right">
         <slot name="form"/>
         <a-form-item>
@@ -14,7 +15,7 @@
       </a-form>
     </div>
     <a-table
-        :columns="tableColumns"
+        :columns="columns"
         :row-key="index"
         :data-source="data"
         :pagination="pagination"
@@ -26,8 +27,9 @@
   </div>
 </template>
 
-<script type="text/jsx">
+<script>
 import {CInput, CSelect} from '@/components/form'
+import {stringify} from 'qs'
 
 export default {
   props: {
@@ -37,36 +39,23 @@ export default {
     },
     index: [String, Function],
     api: Function,
+    format: Function,
   },
   components: {CInput, CSelect},
   data() {
     return {
-      display: item => <strong>{item}</strong>,
       data: [],
+      loading: false,
       pagination: {
         showTotal: (total) => `总数${total}`,
       },
-      loading: false,
       form: this.$form.createForm(this, {name: 'search-form'}),
     }
   },
   mounted() {
-    this.fetch()
-  },
-  computed: {
-    tableColumns: function () {
-      const me = this
-      return this.columns.map(item => {
-        // if (item.hasOwnProperty('render')) {
-        //   item.customRender = (row, index) => {
-        //     // h gets auto injected here(note that data is now a member function)
-        //     return item.render.map(v => <a>123</a>)
-        //   }
-        // }
-
-        return item
-      })
-    },
+    const query = this.format ? this.format(this.$route.query) : this.$route.query
+    this.form.setFieldsValue(query)
+    this.fetch(query)
   },
   methods: {
     handleTableChange(pagination, filters, sorter) {
@@ -96,6 +85,23 @@ export default {
     fetch(params = {}) {
       if (this.api) {
         this.loading = true
+        const query = stringify({
+          ...params,
+          ...this.form.getFieldsValue(),
+        })
+
+        if (query !== stringify(this.$route.query)) {
+          this.$router.push(`${this.$route.path}?${query}`)
+        }
+
+        if (params.hasOwnProperty('page')) {
+          params.page = parseInt(params.page)
+        }
+
+        if (params.hasOwnProperty('page_size')) {
+          params.page_size = parseInt(params.page_size)
+        }
+
         this.api({
           ...params,
           ...this.form.getFieldsValue(),

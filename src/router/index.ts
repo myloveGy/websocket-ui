@@ -1,5 +1,6 @@
 import Vue from 'vue'
 import VueRouter, {RouteConfig} from 'vue-router'
+import store from '../store'
 
 Vue.use(VueRouter)
 
@@ -37,6 +38,10 @@ const router = new VueRouter({
   // @ts-ignore
   base: process.env.BASE_URL,
   routes,
+})
+
+router.afterEach((to, from) => {
+  store.dispatch('setRouter', to).then(v => console.info(123, 'v', v))
 })
 
 export default router

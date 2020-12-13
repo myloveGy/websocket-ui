@@ -1,9 +1,20 @@
 <template>
   <div>
-    <CTable :columns="columns" :api="api" index="user_id" ref="table">
+    <CTable
+        :columns="columns"
+        :api="api"
+        index="id"
+        ref="table"
+        :format="(v) => ({...v, status: parseInt(v.status) || undefined})"
+    >
+      <template slot="button">
+        <a-button type="primary" @click="onCreate" icon="plus">
+          添加应用
+        </a-button>
+      </template>
       <template slot="form">
-        <CInput name="user_id" placeholder="请输入用户ID"/>
-        <CInput name="username" placeholder="请输入用户名称"/>
+        <CInput name="app_id" placeholder="请输入应用ID"/>
+        <CInput name="app_name" placeholder="请输入应用名称"/>
         <CSelect
             name="status"
             placeholder="请选择状态"
@@ -13,7 +24,7 @@
       </template>
     </CTable>
     <CModal ref="form" :submit="submitForm">
-      <Form/>
+      <Form @change="handleChange"/>
     </CModal>
   </div>
 </template>
@@ -21,41 +32,42 @@
 <script>
 import {
   adminAppListApi,
-  adminUserOfflineApi,
-  adminUserOnlineApi,
-  adminUserUpdateApi,
-  adminUserCreateApi,
+  adminAppOfflineApi,
+  adminAppOnlineApi,
+  adminAppUpdateApi,
+  adminAppCreateApi,
+  adminAppDeleteApi,
 } from '@/services'
 import {sync} from '@/utils/sync'
 import CSelect from '@/components/form/CSelect.vue'
 import CInput from '@/components/form/CInput.vue'
 import {CModal, CTable} from '@/components'
 import Form from './inner/Form.vue'
+import {statusRender, buttonsRender} from '@/utils'
 
 export default {
   components: {CSelect, CInput, CModal, Form, CTable},
   data() {
-
     return {
       api: adminAppListApi,
       columns: [
         {
           title: 'ID',
-          dataIndex: 'user_id',
+          dataIndex: 'id',
           sorter: true,
         },
         {
-          title: '用户名称',
-          dataIndex: 'username',
+          title: '应用名称',
+          dataIndex: 'app_name',
         },
         {
-          title: '手机号',
-          dataIndex: 'phone',
+          title: '应用ID',
+          dataIndex: 'app_id',
         },
         {
           title: '状态',
           dataIndex: 'status',
-          scopedSlots: {customRender: 'status'},
+          customRender: statusRender(1, this.$createElement),
         },
         {
           title: '创建时间',
@@ -69,23 +81,12 @@ export default {
         },
         {
           title: '操作',
-          render: [
-            {title: '启用'},
-          ],
-          customRender: (row, index) => {
-            const data = [
-              <a onClick={() => this.onClick({action: 'update', data: row})}>编辑</a>,
-              <a-divider type="vertical"/>,
-            ]
-
-            if (row.status === 1) {
-              data.push(<a onClick={() => this.onClick({action: 'offline', data: row})}>停用</a>)
-            } else {
-              data.push(<a onClick={() => this.onClick({action: 'online', data: row})}>启用</a>)
-            }
-
-            return data
-          },
+          customRender: buttonsRender([
+            {action: 'update', title: '编辑'},
+            {action: 'offline', title: '停用', show: v => v.status === 1, confirm: '确认需要停用该应用?'},
+            {action: 'online', title: '启用', show: v => v.status === 2, confirm: '确认需要启用该应用?'},
+            {action: 'delete', title: '删除', show: item => item.status === 2, popConfirm: '删除数据无法恢复,确定需要删除该应用?'},
+          ], this),
         },
       ],
     }
@@ -93,13 +94,13 @@ export default {
   methods: {
     async submitForm(values, modal) {
       if (modal.action === 'create') {
-        await adminUserCreateApi(values)
+        await adminAppCreateApi(values)
         this.$notification.success({
           message: '温馨提示',
           description: '添加成功',
         })
       } else {
-        await adminUserUpdateApi(values)
+        await adminAppUpdateApi(values)
         this.$notification.success({
           message: '温馨提示',
           description: '编辑成功',
@@ -109,32 +110,39 @@ export default {
       this.$refs.table.fetch()
     },
     onCreate() {
-      this.$refs.form.open('create', '添加用户信息', {values: {}})
+      this.$refs.form.open('create', '添加应用信息', {values: {}})
     },
-    onClick({action, data}) {
+    handleChange(name, value) {
+      this.$refs.form.form.setFieldsValue({[name]: value})
+    },
+    async btnClick({action, data}) {
       switch (action) {
         case 'offline':
-          sync(async () => {
-            await adminUserOfflineApi({user_id: data.user_id})
-            this.$notification.success({
-              message: '操作提醒',
-              description: '停用成功',
-            })
-            this.$refs.table.fetch()
+          await adminAppOfflineApi({id: data.id})
+          this.$notification.success({
+            message: '操作提醒',
+            description: '停用成功',
           })
+          this.$refs.table.fetch()
           break
         case 'online':
-          sync(async () => {
-            await adminUserOnlineApi({user_id: data.user_id})
-            this.$notification.success({
-              message: '操作提醒',
-              description: '启用成功',
-            })
-            this.$refs.table.fetch()
+          await adminAppOnlineApi({id: data.id})
+          this.$notification.success({
+            message: '操作提醒',
+            description: '启用成功',
           })
+          this.$refs.table.fetch()
+          break
+        case 'delete':
+          await adminAppDeleteApi({id: data.id})
+          this.$notification.success({
+            message: '操作提醒',
+            description: '删除成功',
+          })
+          this.$refs.table.fetch()
           break
         case 'update':
-          this.$refs.form.open('update', '修改用户信息', {values: {...data, password: ''}})
+          this.$refs.form.open('update', '编辑应用信息', {values: {...data}})
           break
       }
     },

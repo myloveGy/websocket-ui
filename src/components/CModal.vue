@@ -54,6 +54,9 @@ export default {
       this.visible = false
       this.form.resetFields()
     },
+    handleChange(name, value) {
+      this.form.setFieldsValue({[name]: value})
+    },
     handleSubmit(e) {
       e.preventDefault()
       this.form.validateFieldsAndScroll((err, values) => {

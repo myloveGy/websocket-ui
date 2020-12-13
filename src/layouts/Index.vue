@@ -2,7 +2,7 @@
   <a-layout id="components-layout-demo-custom-trigger">
     <a-layout-sider v-model="collapsed" :trigger="null" collapsible>
       <div class="logo"/>
-      <a-menu theme="dark" mode="inline" :default-selected-keys="[$route.path]" @click="onClick">
+      <a-menu theme="dark" mode="inline" :selected-keys="defaultSelected" @click="onClick">
         <a-menu-item key="/admin/user">
           <a-icon type="user"/>
           <span>用户列表</span>
@@ -24,18 +24,26 @@
       <a-layout-content
           :style="{ margin: '24px 16px', padding: '24px', background: '#fff', minHeight: '280px', overflow: 'hidden' }"
       >
-        <slot>Content</slot>
+        <slot/>
       </a-layout-content>
     </a-layout>
   </a-layout>
 </template>
 <script>
+import {mapState} from 'vuex'
+
 export default {
   name: 'Index',
   data() {
     return {
       collapsed: false,
     }
+  },
+  computed: {
+    ...mapState(['router']),
+    defaultSelected: function () {
+      return [this.router.path]
+    },
   },
   methods: {
     onClick({key}) {

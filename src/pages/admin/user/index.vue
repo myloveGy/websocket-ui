@@ -1,52 +1,28 @@
 <template>
   <div>
-    <a-button type="primary" @click="onCreate">
-      添加用户
-    </a-button>
-    <a-form layout="inline" :form="form" @submit="handleSubmit" style="margin-bottom: 16px; float: right">
-      <CInput name="user_id" placeholder="请输入用户ID"/>
-      <CInput name="username" placeholder="请输入用户名称"/>
-      <CSelect
-          name="status"
-          placeholder="请选择状态"
-          width="120px"
-          :data="[{label: '启用', value: 1},{label: '停用', value: 2}]"
-      />
-      <a-form-item>
-        <a-button type="primary" html-type="submit">
-          搜索
-        </a-button>
-        <a-button :style="{ marginLeft: '8px' }" @click="handleReset">
-          重置
-        </a-button>
-      </a-form-item>
-    </a-form>
-    <a-table
+    <CTable
         :columns="columns"
-        :row-key="record => record.user_id"
-        :data-source="data"
-        :pagination="pagination"
-        :loading="loading"
-        @change="handleTableChange"
+        index="user_id"
+        :api="adminUserListApi"
+        ref="table"
+        :format="(v) => ({...v, status: parseInt(v.status) || undefined})"
     >
-      <template slot="status" slot-scope="status">
-        <a-tag color="#f50" v-if="status === 2">
-          停用
-        </a-tag>
-        <a-tag color="#87d068" v-else>
-          启用
-        </a-tag>
+      <template #button>
+        <a-button type="primary" @click="onCreate" icon="plus">
+          添加用户
+        </a-button>
       </template>
-      <template slot="action" slot-scope="user">
-        <a @click="onClick({action: 'update', data: user})">编辑</a>
-        <a-divider type="vertical"/>
-        <template v-if="user.status === 2">
-          <a @click="onClick({action: 'online', data: user})">启用</a>
-          <a-divider type="vertical"/>
-        </template>
-        <a v-else @click="onClick({action: 'offline', data: user})">停用</a>
+      <template #form>
+        <CInput name="user_id" placeholder="请输入用户ID"/>
+        <CInput name="username" placeholder="请输入用户名称"/>
+        <CSelect
+            name="status"
+            placeholder="请选择状态"
+            width="120px"
+            :data="[{label: '启用', value: 1},{label: '停用', value: 2}]"
+        />
       </template>
-    </a-table>
+    </CTable>
     <CModal ref="form" :submit="submitForm">
       <Form/>
     </CModal>
@@ -55,90 +31,65 @@
 
 <script>
 import {
+  adminUserCreateApi,
+  adminUserDeleteApi,
   adminUserListApi,
   adminUserOfflineApi,
   adminUserOnlineApi,
   adminUserUpdateApi,
-  adminUserCreateApi,
 } from '@/services'
-import {sync} from '@/utils/sync'
-import CSelect from '@/components/form/CSelect.vue'
-import CInput from '@/components/form/CInput.vue'
-import CModal from '@/components/CModal.vue'
+import {CInput, CModal, CSelect, CTable} from '@/components'
 import Form from './inner/Form.vue'
-
-const columns = [
-  {
-    title: 'ID',
-    dataIndex: 'user_id',
-    sorter: true,
-  },
-  {
-    title: '用户名称',
-    dataIndex: 'username',
-  },
-  {
-    title: '手机号',
-    dataIndex: 'phone',
-  },
-  {
-    title: '状态',
-    dataIndex: 'status',
-    scopedSlots: {customRender: 'status'},
-  },
-  {
-    title: '创建时间',
-    dataIndex: 'created_at',
-    align: 'center',
-  },
-  {
-    title: '修改时间',
-    dataIndex: 'updated_at',
-    align: 'center',
-  },
-  {
-    title: '操作',
-    scopedSlots: {customRender: 'action'},
-  },
-]
+import {buttonsRender, statusRender} from '@/utils'
 
 export default {
-  components: {CSelect, CInput, CModal, Form},
+  components: {CSelect, CInput, CModal, CTable, Form},
   data() {
     return {
+      adminUserListApi,
       data: [],
-      pagination: {
-        showTotal: (total) => `总数${total}`,
-      },
-      loading: false,
-      columns,
-      form: this.$form.createForm(this, {name: 'horizontal_login'}),
+      columns: [
+        {
+          title: 'ID',
+          dataIndex: 'user_id',
+          sorter: true,
+        },
+        {
+          title: '用户名称',
+          dataIndex: 'username',
+        },
+        {
+          title: '手机号',
+          dataIndex: 'phone',
+        },
+        {
+          title: '状态',
+          dataIndex: 'status',
+          customRender: statusRender(1, this.$createElement),
+        },
+        {
+          title: '创建时间',
+          dataIndex: 'created_at',
+          align: 'center',
+        },
+        {
+          title: '修改时间',
+          dataIndex: 'updated_at',
+          align: 'center',
+        },
+        {
+          title: '操作',
+          customRender: buttonsRender([
+            {action: 'update', title: '编辑'},
+            {action: 'online', title: '启用', show: item => item.status === 2, popConfirm: '确定需要启用该用户?'},
+            {action: 'offline', title: '停用', show: item => item.status === 1, popConfirm: '确定需要停用该用户?'},
+            {action: 'delete', title: '删除', show: item => item.status === 2, popConfirm: '删除数据无法恢复,确定需要删除该用户?'},
+          ], this),
+        },
+      ],
     }
   },
-  mounted() {
-    this.fetch()
-  },
   methods: {
-    handleTableChange(pagination, filters, sorter) {
-      const pager = {...this.pagination}
-      pager.current = pagination.current
-      this.pagination = pager
-      this.fetch({
-        page_size: pagination.pageSize,
-        page: pagination.current,
-        sort_field: sorter.field,
-        sort_order: sorter.order === 'ascend' ? 'asc' : 'desc',
-        ...filters,
-      })
-    },
-    handleSubmit(e) {
-      e.preventDefault()
-      this.form.validateFields((err, values) => {
-        if (!err) {
-          this.fetch(values)
-        }
-      })
-    },
     async submitForm(values, modal) {
       if (modal.action === 'create') {
         await adminUserCreateApi(values)
@@ -154,51 +105,41 @@ export default {
         })
       }
 
-      this.fetch()
-    },
-    handleReset() {
-      this.form.resetFields()
-      this.fetch()
+      this.$refs.table.fetch()
     },
     onCreate() {
       this.$refs.form.open('create', '添加用户信息', {values: {}})
     },
-    onClick({action, data}) {
+    async btnClick({action, data}) {
       switch (action) {
         case 'offline':
-          sync(async () => {
-            await adminUserOfflineApi({user_id: data.user_id})
-            this.$notification.success({
-              message: '操作提醒',
-              description: '停用成功',
-            })
-            this.fetch()
+          await adminUserOfflineApi({user_id: data.user_id})
+          this.$notification.success({
+            message: '操作提醒',
+            description: '停用成功',
           })
+          this.$refs.table.fetch()
           break
         case 'online':
-          sync(async () => {
-            await adminUserOnlineApi({user_id: data.user_id})
-            this.$notification.success({
-              message: '操作提醒',
-              description: '启用成功',
-            })
-            this.fetch()
+          await adminUserOnlineApi({user_id: data.user_id})
+          this.$notification.success({
+            message: '操作提醒',
+            description: '启用成功',
           })
+          this.$refs.table.fetch()
+          break
+        case 'delete':
+          await adminUserDeleteApi({user_id: data.user_id})
+          this.$notification.success({
+            message: '操作提醒',
+            description: '删除成功',
+          })
+          this.$refs.table.fetch()
           break
         case 'update':
           this.$refs.form.open('update', '修改用户信息', {values: {...data, password: ''}})
           break
       }
-    },
-    fetch(params = {}) {
-      console.log('params:', params)
-      this.loading = true
-      adminUserListApi(params).then(({items, pagination}) => {
-        this.data = items
-        this.pagination = {...this.pagination, ...pagination}
-      }).finally(() => this.loading = false).catch(e => {
-        console.info(123)
-      })
     },
   },
 }

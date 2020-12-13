@@ -18,6 +18,7 @@
     "no-consecutive-blank-lines": false,
     "object-literal-sort-keys": false,
     "ordered-imports": false,
+    "triple-equals": false,
     "quotemark": [
       true,
       "single"

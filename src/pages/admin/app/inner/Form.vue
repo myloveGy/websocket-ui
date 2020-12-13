@@ -1,37 +1,28 @@
 <template>
   <div>
+    <CInput name="id" type="hidden" simple/>
     <CInput
-        name="user_id"
-        placeholder="请输入用户名称"
-        type="hidden"
-        simple
-    />
-    <CInput
-        name="username"
-        placeholder="请输入用户名称"
-        label="用户名称"
+        name="app_name"
+        placeholder="请输入应用名称"
+        label="应用名称"
         rules="required"
     />
-    <CInput
-        name="phone"
-        placeholder="请输入手机号码"
-        label="手机号码"
+    <CAutoInput
+        name="app_secret"
+        placeholder="请输入应用秘钥"
+        label="应用秘钥"
         rules="required"
-    />
-    <CInput
-        name="password"
-        placeholder="请输入密码"
-        label="用户密码"
-        type="password"
+        @change="(...args) => this.$emit('change', ...args)"
     />
   </div>
 </template>
 
 <script>
-import CInput from '@/components/form/CInput.vue'
+import {CInput, CAutoInput} from '@/components/form'
 
 export default {
   name: 'Form',
-  components: {CInput},
+  components: {CInput, CAutoInput},
+  props: ['form'],
 }
 </script>
